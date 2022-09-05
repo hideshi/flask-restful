@@ -1,22 +1,26 @@
 from flask import Flask, jsonify, request, abort, make_response
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.exceptions import HTTPException
+from flask_sqlalchemy import SQLAlchemy, SignallingSession, orm
 from dataclasses import dataclass
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///restapi.db'
+
 app.config['JSON_AS_ASCII'] = False
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///restapi.db'
 db = SQLAlchemy(app)
 
 @dataclass
 class Employee(db.Model):
+    __tablename__ = 'employee'
+
     id: int
     name: str
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
 
-@app.route('/employees', methods=['GET'])
+@app.get('/employees')
 def get_employees():
     try:
         employees = Employee.query.all()
@@ -28,7 +32,7 @@ def get_employees():
         app.logger.error(e)
         return make_response(jsonify({'message': 'Internal server error'}), 500)
 
-@app.route('/employees/<id>', methods=['GET'])
+@app.get('/employees/<id>')
 def get_employee(id):
     try:
         employee = Employee.query.filter(Employee.id == id).first()
@@ -41,7 +45,7 @@ def get_employee(id):
         app.logger.error(e)
         return make_response(jsonify({'message': 'Internal server error'}), 500)
 
-@app.route('/employees', methods=['POST'])
+@app.post('/employees')
 def create_employee():
     try:
         name = request.form['name']
@@ -55,7 +59,7 @@ def create_employee():
         app.logger.error(e)
         return make_response(jsonify({'message': 'Internal server error'}), 500)
 
-@app.route('/employees/<id>', methods=['PUT'])
+@app.put('/employees/<id>')
 def update_employee(id):
     try:
         name = request.form['name']
@@ -70,7 +74,7 @@ def update_employee(id):
         app.logger.error(e)
         return make_response(jsonify({'message': 'Internal server error'}), 500)
 
-@app.route('/employees/<id>', methods=['PATCH'])
+@app.patch('/employees/<id>')
 def update_employee_partially(id):
     try:
         name = request.form['name']
@@ -85,7 +89,7 @@ def update_employee_partially(id):
         app.logger.error(e)
         return make_response(jsonify({'message': 'Internal server error'}), 500)
 
-@app.route('/employees/<id>', methods=['DELETE'])
+@app.delete('/employees/<id>')
 def delete_employee(id):
     try:
         employee = Employee.query.filter(Employee.id == id).first()
